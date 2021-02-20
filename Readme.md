@@ -24,16 +24,14 @@ This repository contains the C source code to be programmed into an Arduino Uno 
 
 The basic Arduino Uno _Starter Project_ setup consists of a 180 Ohm resistor from digital output pin 11 to the anode of an LED.  Then, the cathode of the LED (flat edge side of the LED base) goes to ground. See Figure #1.  Also, a 5k Ohm potentiometer is attached to the Analog input 0.  The top part of the potentiometer goes to +5V and the opposite side goes to ground.  The middle (wiper) contact goes directly to Analog pin 0.  You will also need a pushbutton switch connected from ground to digital input 12. See Figure #1. When you plug the Arduino into the USB port, the operating system should automatically install the drivers.
 
-![Image of wire support](\images\ArduinoUnoTestSetup.jpg)
-
+![](images\ArduinoUnoTestSetup.jpg)
 ### Figure#1: Crude test setup schematic
 
 ---
 ## Details about the code
 The main purpose is to provide a "language" that you could use serial commands to interact with the Arduino.  You can turn on LEDS, get pushbutton status, have the analog input automatically outputted every second, etc.  These are just a few of things one might use an Arduino to do. Once you have programmed the UNO, you can use the built-in Serial Monitor in the IDE to send the commands by hand to make sure they work.  The default baud rate is 115200.
 
-![Serial monitor window](\images\IDEserialMonitor.png)
-
+![](images\IDEserialMonitor.png)
 ### Figure#2: Serial Monitor window
 
 Below is a summary of the commands (you can add or delete as needed)
@@ -56,7 +54,7 @@ Below is a summary of the commands (you can add or delete as needed)
 * __`T`__ (Toggles the on-board LED)
     * __`TO`__ (turns off the on-board LED)
 
-This project will be continuously evolving and improving.  However, I will try and prevent unnecessary "feature creep". :grinning:
+This project will be continuously evolving and improving.  However, I will try and prevent unnecessary "feature creep".
 
 Enjoy!!
 
