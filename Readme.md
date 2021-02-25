@@ -1,5 +1,5 @@
-# Starter project: The Arduino Uno board source code (that can interface to a computer via a virtual serial port)
-### Rev 2/20/2021
+# Starter project: The Arduino Uno board source code (which interfaces to a computer via USB)
+### Rev 2/24/2021
 ### License: [Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0)
 
 ---
@@ -40,9 +40,10 @@ Below is a summary of the commands (you can add or delete as needed)
 * __`P`__ (returns: Number of power-on cycles)
     - __`P0`__ (resets the number of power-on cycles to 0)
 * __`A`__ (returns: value of analog input pin 0 (0 to 1023))
-    * __`AB`__ (Begin sending analog value every "xx" seconds)
+    * __`AB`__ (Begin sending analog value & pushbutton status every "xx" seconds)
     * __`AE`__ (End sending data)
     * __`Oxx`__  (Sets the number of xx seconds between analog value outputs)
+        * __`O?`__  (Returns the number of seconds between outputs)
 * __`L`__ (Toggles LED on and OFF)
     * __`LF`__ (sets the LED to flicker like a light bulb mode)
     * __`LO`__ (turns off the LED)
