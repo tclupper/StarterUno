@@ -5,7 +5,7 @@
         (e.g. Get the hardware information like serial number and firmware revision or number of power cycles)
   Author: Tom Clupper
   License: [Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0)
-  Revision: 2/20/2021 (ver 1.0)
+  Revision: 2/24/2021 (ver 1.0)
 */
 
 // vvvvvvvvvvvvvvvvvvvvvvvvv  Core variables  vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -101,11 +101,11 @@ void loop() {
    analogWrite(FlickerLEDpin, (random(LEDbrightness)+255-LEDbrightness)); 
   }
   
-  /* Output the values of the analog input pin every OutputInterval (if enabled) */
+  /* Output the values of the analog input pin and pushbutton state every OutputInterval (if enabled) */
   OutputIntervalMillis = long(OutputInterval)*long(1000);   // Output interval in milliseconds
   if ( ((currentMillis - previousMillis) >= OutputIntervalMillis) && OutputData) {
     previousMillis = currentMillis;
-    OutputAnalogData(AnalogInputPin);  
+    OutputDataReport(AnalogInputPin,PushbuttonState);  
   } 
 
   /* Check to see if the pushbutton has been pressed for a sufficiently long time to inducte an "on" state */
@@ -183,7 +183,7 @@ void ProcessCommands() {
             OutputData = false;
             Serial.println("OK");            
         } else{
-          /* This returns a number from 0 to 2023 (10 bit A/D converter) that is the voltage on AnalogInputPin */
+          /* This returns a number from 0 to 2023 (10 bit A/D converter) that is the voltage on AnalogInputPin*/
           OutputAnalogData(AnalogInputPin);
         }
         break;  
@@ -269,6 +269,12 @@ void ProcessCommands() {
 /* ----------------------------- Send Output Data -------------------------------------- */
 void OutputAnalogData(int AnalogPin) {
   Serial.println(analogRead(AnalogPin));
+}
+
+void OutputDataReport(int AnalogPin, int Pushbutton) {
+  Serial.print(analogRead(AnalogPin));
+  Serial.print(", ");
+  Serial.println(Pushbutton);
 }
 
 void TogglePin(int OutputPin) {
