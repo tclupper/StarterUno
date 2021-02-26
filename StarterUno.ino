@@ -5,7 +5,9 @@
         (e.g. Get the hardware information like serial number and firmware revision or number of power cycles)
   Author: Tom Clupper
   License: [Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0)
-  Revision: 2/24/2021 (ver 1.0)
+  Revision: 2/26/2021 (ver 1.1)
+    1.0 = Initial version
+    1.1 = Modified the core command set (added access to digital IO and other analog channels)
 */
 
 // vvvvvvvvvvvvvvvvvvvvvvvvv  Core variables  vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -17,7 +19,7 @@ int NumPowerCycles = 0;
 /* Variable used in serial communication */
 char InBuff[10];
 int BuffIndex = 0;
-char EOL = 13;
+char EOL = 13;                  // Make sure the computer is expecting this as the terminating character
 bool ProcessCommand = false;
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 /* Define variable for the On-board LED output */
@@ -25,6 +27,9 @@ int OnBoardLEDpin = 13;
 
 /* Define the pushbutton input pin */
 int PushbuttonInputPin = 12;
+
+/* Define an arbitrary digital pin */
+int digitalIOpin = 10;
 
 /* This variable will be used for timing events */
 unsigned long currentMillis = 0;
@@ -68,6 +73,9 @@ void setup() {
   // [Orange on-board LED.  This is also used as a debug pin]
   pinMode(OnBoardLEDpin, OUTPUT);
   digitalWrite(OnBoardLEDpin, LOW);
+
+  // [Setup the digital pin]
+  pinMode(digitalIOpin, INPUT);
     
   // [LED to flicker]
   pinMode(FlickerLEDpin, OUTPUT);
@@ -102,10 +110,10 @@ void loop() {
   }
   
   /* Output the values of the analog input pin and pushbutton state every OutputInterval (if enabled) */
-  OutputIntervalMillis = long(OutputInterval)*long(1000);   // Output interval in milliseconds
+  OutputIntervalMillis = long(OutputInterval)*long(1000);      // Output interval in milliseconds
   if ( ((currentMillis - previousMillis) >= OutputIntervalMillis) && OutputData) {
     previousMillis = currentMillis;
-    OutputDataReport(AnalogInputPin,PushbuttonState);  
+    DataReportOut(AnalogInputPin, PushbuttonState);  
   } 
 
   /* Check to see if the pushbutton has been pressed for a sufficiently long time to inducte an "on" state */
@@ -113,7 +121,7 @@ void loop() {
     if (millisAfterChange == 0 && PushbuttonState == 0) {
       millisAfterChange = currentMillis;          // Start the bounce timer for button press
     }
-    if (((millis() - millisAfterChange) > 100) && PushbuttonState == 0) {
+    if (((millis() - millisAfterChange) > 100) && PushbuttonState == 0) {     // wait for 100msec to make sure.
       PushbuttonState = 1;
       millisAfterChange = 0;           
     }
@@ -132,7 +140,7 @@ void loop() {
 /* ----------------------------- Check for Serial Data ---------------------------- */
 void CheckforSerialData() {
   // See if there is a character ready from the serial port
-  if (Serial.available()>0)  {
+  if (Serial.available() > 0)  {
     InBuff[BuffIndex] = byte(Serial.read());
      if (InBuff[BuffIndex] == EOL)  {
       BuffIndex = 0;
@@ -159,9 +167,9 @@ void ProcessCommands() {
         delay(10);
         break;
         
-      case 'I': case 'i':     // Device Information (This can be whatever you want)
+      case 'I': case 'i':     // Device Information (A throw-back to the IEEE488.2 days of *IDN?)
         // Manufacture,Model,SerialNumber,FirmwareRevision
-        Serial.println("Arduino,StarterCode,SC001,1.0");
+        Serial.println("Arduino,StarterCode,SC001,1.1");
         break;        
         
       case 'P': case 'p':   // Read the number of Power-on cycles stored in EEprom (Use "P0" to reset)
@@ -172,46 +180,78 @@ void ProcessCommands() {
         } else {
           Serial.println(NumPowerCycles);          
         }
-        break;       
-      /* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
-      case 'A': case 'a':     // usage: Ax; x=B (Begin outputting data), x=E (End outputting data), else read once
+        break;
+
+      /* vvvvvvvvvvvvvvvvvvvvvvvvv  basic I/O commandsvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv */
+      case 'A': case 'a':     // usage: Ax  (where x = 0 to 5 sets the analog channel to output and then outputs it)
+        AnalogInputPin = (InBuff[1]-48);
+        if (AnalogInputPin < 0 or AnalogInputPin > 5) {
+          AnalogInputPin = 0;       // Between 0 and 5 only
+        }
+        /* This returns a number from 0 to 2023 (10 bit A/D converter) that is the voltage on AnalogInputPin*/
+        /* Remember to keep the input impedance of the voltage source < 5k Ohms */
+        AnalogDataOut(AnalogInputPin);
+        break;  
+
+      case 'D': case 'd':     // usage: Dxxy  (where xx = 02...12 sets pin xx to putput of y (0 or 1), y = nothing sets input and returns state
+        digitalIOpin = (InBuff[1]-48)*10 + (InBuff[2]-48);
+        if (digitalIOpin < 2 or digitalIOpin > 12) {
+          digitalIOpin = 2;      // RX & TX take up pins 0 & 1 and on-board LED takes up 13.
+        }      
+        if (InBuff[3] == '1') {
+          pinMode(digitalIOpin,OUTPUT);
+          digitalWrite(digitalIOpin,HIGH);
+          Serial.println("OK->High");
+        } else if (InBuff[3] == '0') {
+          pinMode(digitalIOpin,OUTPUT);
+          digitalWrite(digitalIOpin,LOW);
+          Serial.println("OK->Low");
+        } else {
+          pinMode(digitalIOpin,INPUT_PULLUP);
+          DigitalDataOut(digitalIOpin);              
+        }
+        break;
+
+      case 'S': case 's':     // usage: S;  will return a 1 for pressed and 0 for not
+        Serial.println(PushbuttonState); 
+        break;
+        
+      /* vvvvvvvvvvvvvvvvvvvvvvvvv  Commands for logging data stream vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv */
+      case 'R': case 'r':     // usage: Rx  (x = B to begin streaming report, x = nothing to end the stream)
         if (InBuff[1] == 'b' or InBuff[1] == 'B') {
             currentMillis = millis();
             previousMillis = currentMillis;
             OutputData = true;
-        } else if (InBuff[1] == 'e' or InBuff[1] == 'E') {
+        } else {
             OutputData = false;
-            Serial.println("OK");            
-        } else{
-          /* This returns a number from 0 to 2023 (10 bit A/D converter) that is the voltage on AnalogInputPin*/
-          OutputAnalogData(AnalogInputPin);
+            Serial.println("OK-Ended");            
         }
-        break;  
-
-      case 'B': case 'b':     // usage: Bxxx (e.g. B135 sets max random LED brightness level to 135 (B? to inquire))
-        if (InBuff[1] == '?')  {
-          Serial.println(LEDbrightness);
-        } else  {
-          LEDbrightness = (InBuff[1]-48)*100+(InBuff[2]-48)*10+(InBuff[3]-48);
-          if (LEDbrightness < 10) LEDbrightness = 10;       // At lease 10
-          if (LEDbrightness > 250) LEDbrightness = 250;     // No more than 250         
+        break;
+           
+      case 'O': case 'o':     // usage: Oxx (for an output interval of every xx seconds, O? to inquire)
+        if (InBuff[1] == '?') {
+          Serial.println(OutputInterval);
+        } else {
+          OutputInterval = (InBuff[1]-48)*10+(InBuff[2]-48);
+          if (OutputInterval < 1) OutputInterval = 1;       // At lease 1 sec.
+          if (OutputInterval > 60) OutputInterval = 60;     // No more than 60 sec.          
           Serial.println("OK"); 
         }
-        break;  
+        break;
         
-      case 'D': case 'd':     // usage: Dxxx (e.g. D200 sets LED flicker delay at 200 msec (D? to inquire))
-        if (InBuff[1] == '?')  {
-          Serial.println(LEDinterval);
-        } else  {
-          LEDinterval = long(InBuff[1]-48)*100+(InBuff[2]-48)*10+(InBuff[3]-48);
-          if (LEDinterval < 10) LEDinterval = 10;       // At lease 10
-          if (LEDinterval > 250) LEDinterval = 250;     // No more than 250         
+      /* vvvvvvvvvvvvvvvvvvvvvvvvv  Commands for LED(s) vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv */
+      case 'L': case 'l':     // usage: Lx (e.g. L toggles On-board LED on and off, LO turns it off)
+        if (InBuff[1] == 'O' or InBuff[1] == 'o') {
+          digitalWrite(OnBoardLEDpin,LOW);
+          Serial.println("OK");
+        } else {
+          TogglePin(OnBoardLEDpin); 
           Serial.println("OK"); 
         }
-        break;  
-
-      case 'L': case 'l':     // usage: Lx (e.g. L toggles Flicker LED on and off, LF sets to flicker mode, LO turns it off)
-        if (InBuff[1] == 'F' or InBuff[1] == 'f')  {
+        break;
+        
+      case 'M': case 'm':     // usage: Mx (e.g. M toggles Flicker LED on and off, MF sets to flicker mode, MO turns it off)
+        if (InBuff[1] == 'F' or InBuff[1] == 'f') {
           FlickerMode = true;
           Serial.println("FlickerMode");
         } else if (InBuff[1] == 'O' or InBuff[1] == 'o') {
@@ -223,33 +263,31 @@ void ProcessCommands() {
           TogglePin(FlickerLEDpin); 
           Serial.println("OK"); 
         }
-        break;  
-
-      case 'O': case 'o':     // usage: O01, for an output interval of every 1 second (O? to inquire)
-        if (InBuff[1] == '?')  {
-          Serial.println(OutputInterval);
+        break; 
+        
+      case 'B': case 'b':     // usage: Bxxx (e.g. B135 sets max random LED brightness level to 135 (B? to inquire))
+        if (InBuff[1] == '?') {
+          Serial.println(LEDbrightness);
         } else  {
-          OutputInterval = (InBuff[1]-48)*10+(InBuff[2]-48);
-          if (OutputInterval < 1) OutputInterval = 1;       // At lease 1 sec.
-          if (OutputInterval > 60) OutputInterval = 60;     // No more than 60 sec.          
+          LEDbrightness = (InBuff[1]-48)*100+(InBuff[2]-48)*10+(InBuff[3]-48);
+          if (LEDbrightness < 10) LEDbrightness = 10;       // At lease 10
+          if (LEDbrightness > 250) LEDbrightness = 250;     // No more than 250         
           Serial.println("OK"); 
         }
-        break;
-
-      case 'S': case 's':     // usage: S, (will return 1 for pressed and 0 for not)
-        Serial.println(PushbuttonState); 
-        break;
+        break;  
         
-      case 'T': case 't':     // usage: Tx (e.g. T toggles On-board LED on and off, TO turns it off)
-        if (InBuff[1] == 'O' or InBuff[1] == 'o'){
-          digitalWrite(OnBoardLEDpin,LOW);
-          Serial.println("OK");
+      case 'T': case 't':     // usage: Txxx (e.g. D200 sets LED flicker delay time to 200 msec, T? to inquire))
+        if (InBuff[1] == '?') {
+          Serial.println(LEDinterval);
         } else {
-          TogglePin(OnBoardLEDpin); 
+          LEDinterval = long(InBuff[1]-48)*100+(InBuff[2]-48)*10+(InBuff[3]-48);
+          if (LEDinterval < 10) LEDinterval = 10;       // At lease 10
+          if (LEDinterval > 250) LEDinterval = 250;     // No more than 250         
           Serial.println("OK"); 
         }
-        break;
-        
+        break;  
+      /* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
+      
       default:    //  If a non-recognizable command occurs, output the command back to the Serial port
         bool EndofCommand = false;
         Serial.print(":");
@@ -262,16 +300,23 @@ void ProcessCommands() {
         Serial.println(":");        
         break;
     }
+    for (int i=0; i <=9; i++){   // Clears out the InBuff buffer
+      InBuff[i]=0;  
+    }
   }  
 }
 /* ----------------------------- End Process Commands ---------------------------------- */
 
 /* ----------------------------- Send Output Data -------------------------------------- */
-void OutputAnalogData(int AnalogPin) {
+void AnalogDataOut(int AnalogPin) {
   Serial.println(analogRead(AnalogPin));
 }
 
-void OutputDataReport(int AnalogPin, int Pushbutton) {
+void DigitalDataOut(int digitalPin) {
+  Serial.println(digitalRead(digitalPin));  
+}
+
+void DataReportOut(int AnalogPin, int Pushbutton) {
   Serial.print(analogRead(AnalogPin));
   Serial.print(", ");
   Serial.println(Pushbutton);

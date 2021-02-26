@@ -1,5 +1,5 @@
 # Starter project: The Arduino Uno board source code (which interfaces to a computer via USB)
-### Rev 2/24/2021
+### Rev 2/26/2021
 ### License: [Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0)
 
 ---
@@ -39,21 +39,22 @@ Below is a summary of the commands (you can add or delete as needed)
     * A throw-back to the *IDN? of GBIB488.2 days.
 * __`P`__ (returns: Number of power-on cycles)
     - __`P0`__ (resets the number of power-on cycles to 0)
-* __`A`__ (returns: value of analog input pin 0 (0 to 1023))
-    * __`AB`__ (Begin sending analog value & pushbutton status every "xx" seconds)
-    * __`AE`__ (End sending data)
-    * __`Oxx`__  (Sets the number of xx seconds between analog value outputs)
-        * __`O?`__  (Returns the number of seconds between outputs)
-* __`L`__ (Toggles LED on and OFF)
-    * __`LF`__ (sets the LED to flicker like a light bulb mode)
-    * __`LO`__ (turns off the LED)
+* __`Ax`__ (returns: value of analog input pin x (0 to 5))
+* __`Dxxy`__ (sets digital IO pin to xx. y = 0 or 1 sets and makes an output, y = ? sets and reads as an input)
+* __`RB`__  (Begins streaming a "report" of analog values and pushbutton status every "xx" seconds)
+    * __`R`__ (ends the data streaming)
+* __`Oxx`__  (Sets the number of xx seconds between analog value outputs)
+    * __`O?`__  (Returns the number of seconds between outputs)
+* __`M`__ (Toggles LED on and OFF)
+    * __`MF`__ (sets the LED to flicker like a light bulb mode)
+    * __`MO`__ (turns off the LED)
     * __`Bxxx`__ (sets the max random LED brightness during flicker mode)
         * __`B?`__ (returns the current max brightness level)
-    * __`Dxxx`__ (sets the flicker delay between changes.)
-        * __`D?`__ (returns the current flicker delay value)
+    * __`Txxx`__ (sets the flicker delay between changes.)
+        * __`T?`__ (returns the current flicker delay value)
 * __`S`__ (returns: debounced value fo the pushbutton. 0 for not pushed, 1 for pushed)
-* __`T`__ (Toggles the on-board LED)
-    * __`TO`__ (turns off the on-board LED)
+* __`L`__ (Toggles the on-board LED)
+    * __`LO`__ (turns off the on-board LED)
 
 This project will be continuously evolving and improving.  However, I will try and prevent unnecessary "feature creep".
 
