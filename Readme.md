@@ -1,5 +1,5 @@
 # Starter project: The Arduino Uno board source code (which interfaces to a computer via USB)
-### Rev 2/26/2021
+### Rev 3/2/2021
 ### License: [Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0)
 
 ---
@@ -28,6 +28,13 @@ The basic Arduino Uno _Starter Project_ setup consists of a 180 Ohm resistor fro
 ### Figure#1: Crude test setup schematic
 
 ---
+## Key functionality
+1) Allow user to read analog channels 0 through 5.
+2) Allow user to set or read digital channels 2 through 12.
+3) Allow user to turn on/off on-board LED.
+4) Allow user to turn on/off or "flicker" off-board LED.
+5) Allow user to have a pushbutton input.
+6) Allow user to output a "report" of analog inputs and pushbutton input at regular intervals.
 ## Details about the code
 The main purpose is to provide a "language" that you could use serial commands to interact with the Arduino.  You can turn on LEDS, get pushbutton status, have the analog input automatically outputted every second, etc.  These are just a few of things one might use an Arduino to do. Once you have programmed the UNO, you can use the built-in Serial Monitor in the IDE to send the commands by hand to make sure they work.  The default baud rate is 115200.
 
@@ -41,7 +48,17 @@ Below is a summary of the commands (you can add or delete as needed)
     - __`P0`__ (resets the number of power-on cycles to 0)
 * __`Ax`__ (returns: value of analog input pin x (0 to 5))
 * __`Dxxy`__ (sets digital IO pin to xx. y = 0 or 1 sets and makes an output, y = ? sets and reads as an input)
-* __`RB`__  (Begins streaming a "report" of analog values and pushbutton status every "xx" seconds)
+* __`Rxy`__  (Set the report output format of analog values and pushbutton status at regular intervals)
+    * if x = F, then y specifies the output report format
+        * y = 0 to output: analog pin __`Ax`__ state, last pushbutton state
+        * y = 1 to output: analog0 state, last pushbutton state
+        * y = 2 to output: analog0, analog1, last pushbutton state
+        * y = 3 to output: analog0, analog1, analog2, last pushbutton state
+        * y = 4 to output: analog0, analog1, analog2, analog3, last pushbutton state
+        * y = 5 to output: analog0, analog1, analog2, analog3, analog4, last pushbutton state
+        * y = 6 to output: analog0, analog1, analog2, analog3, analog4, analog 5, last pushbutton state
+        * y = ?, then return output format index
+    * __`RB`__ (begins streaming the data at the interval set by __`Oxx`__)
     * __`R`__ (ends the data streaming)
 * __`Oxx`__  (Sets the number of xx seconds between analog value outputs)
     * __`O?`__  (Returns the number of seconds between outputs)
