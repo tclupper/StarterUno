@@ -5,11 +5,12 @@
         (e.g. Get the hardware information like serial number and firmware revision or number of power cycles)
   Author: Tom Clupper
   License: [Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0)
-  Revision: 3/2/2021 (ver 1.2)
+  Revision: 3/15/2021 (ver 1.3)
     1.0 = Initial version
     1.1 = Modified the core command set (added access to digital IO and other analog channels)
     1.2 = Modified the core command set (added more options to the report output)
         = Renamed variables and functions using "snake case".
+    1.3 = Modified report output format
 
   Key functionality:
     1) Allow user to read analog channels 0 through 5.
@@ -30,6 +31,7 @@ int num_power_cycles = 0;
 char input_buffer[10];
 int buffer_index = 0;
 char EOL = 13;                    // Make sure the computer is expecting this as the terminating line character
+char NL = 10;                     // New line character
 bool process_command = false;
 
 /* This variable will be used throughout the program for timing events */
@@ -182,7 +184,7 @@ void process_commands() {
         
       case 'I': case 'i':     // Device Information (A throw-back to the IEEE488.2 days of *IDN?)
         // Manufacture,Model,SerialNumber,FirmwareRevision
-        Serial.println("Arduino,StarterCode,SC001,1.2");
+        Serial.println("Arduino,StarterCode,SC001,1.3");
         break;        
         
       case 'P': case 'p':   // Read the number of Power-on cycles stored in EEprom (Use "P0" to reset)
@@ -233,13 +235,12 @@ void process_commands() {
       /* vvvvvvvvvvvvvvvvvvvvvvvvv  Commands for logging data stream vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv */
       case 'R': case 'r':     // usage: Rxy  (Set x = B to begin streaming report, when x = y = nothing, (i.e. just R) then end the stream)
                               //              if x = F, then y specifies the output report format
-                              // y = 0 to output: analog_pin state, pushbutton_state_for_report    {default}
-                              // y = 1 to output: analog0 state, pushbutton_state_for_report
-                              // y = 2 to output: analog0, analog1, pushbutton_state_for_report
-                              // y = 3 to output: analog0, analog1, analog2, pushbutton_state_for_report
-                              // y = 4 to output: analog0, analog1, analog2, analog3, pushbutton_state_for_report
-                              // y = 5 to output: analog0, analog1, analog2, analog3, analog4, pushbutton_state_for_report
-                              // y = 6 to output: analog0, analog1, analog2, analog3, analog4, analog 5, pushbutton_state_for_report
+                              // y = 0 to output: pushbutton_state_for_report, analog0          {default}
+                              // y = 1 to output: pushbutton_state_for_report, analog0, analog1
+                              // y = 2 to output: pushbutton_state_for_report, analog0, analog1, analog2
+                              // y = 3 to output: pushbutton_state_for_report, analog0, analog1, analog2, analog3
+                              // y = 4 to output: pushbutton_state_for_report, analog0, analog1, analog2, analog3, analog4
+                              // y = 5 to output: pushbutton_state_for_report, analog0, analog1, analog2, analog3, analog4, analog 5
                               // y = ?, then return output format
         if (input_buffer[1] == 'b' or input_buffer[1] == 'B') {
             current_millis = millis();
@@ -251,7 +252,7 @@ void process_commands() {
           } else {
             output_format = (input_buffer[2]-48);
             if (output_format < 0) output_format = 0;     // At least 0
-            if (output_format > 6) output_format = 6;     // No more than 6
+            if (output_format > 5) output_format = 5;     // No more than 5
             Serial.println("OK");            
           }
         } else {
@@ -349,35 +350,32 @@ void digital_data_out() {
 }
 
 void report_data() {
-  if (output_format == 0){
-    Serial.print(analogRead(0));
-    Serial.print(", ");
-  } else if (output_format >= 1) {   
-    Serial.print(analogRead(analog_pin));
+  Serial.print( (pushbutton_state | pushbutton_state_for_report) );
+  pushbutton_state_for_report = 0;
+  Serial.print(", ");
+  Serial.print(analogRead(0));
+  if (output_format >= 1){
     Serial.print(", ");   
+    Serial.print(analogRead(1));
   }
   if (output_format >= 2){
-    Serial.print(analogRead(1));
-    Serial.print(", ");
+    Serial.print(", ");    
+    Serial.print(analogRead(2));
   }
   if (output_format >= 3){
-    Serial.print(analogRead(2));
-    Serial.print(", ");
+    Serial.print(", ");    
+    Serial.print(analogRead(3));
   }
   if (output_format >= 4){
-    Serial.print(analogRead(3));
-    Serial.print(", ");
+    Serial.print(", ");    
+    Serial.print(analogRead(4));
   }
   if (output_format >= 5){
-    Serial.print(analogRead(4));
     Serial.print(", ");
-  }
-  if (output_format >= 6){
     Serial.print(analogRead(5));
-    Serial.print(", ");
   }
-  Serial.println( (pushbutton_state | pushbutton_state_for_report) );
-  pushbutton_state_for_report = 0;
+  Serial.print('\r');
+  Serial.print('\n');
 }
 
 void toggle_pin(int toggle_pin) {
