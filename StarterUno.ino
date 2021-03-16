@@ -5,7 +5,7 @@
         (e.g. Get the hardware information like serial number and firmware revision or number of power cycles)
   Author: Tom Clupper
   License: [Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0)
-  Revision: 3/15/2021 (ver 1.3)
+  Revision: 3/16/2021 (ver 1.3)
     1.0 = Initial version
     1.1 = Modified the core command set (added access to digital IO and other analog channels)
     1.2 = Modified the core command set (added more options to the report output)

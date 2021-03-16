@@ -1,5 +1,5 @@
 # Starter project: The Arduino Uno board source code (which interfaces to a computer via USB)
-### Rev 3/2/2021
+### Rev 3/16/2021
 ### License: [Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0)
 
 ---
@@ -50,13 +50,12 @@ Below is a summary of the commands (you can add or delete as needed)
 * __`Dxxy`__ (sets digital IO pin to xx. y = 0 or 1 sets and makes an output, y = ? sets and reads as an input)
 * __`Rxy`__  (Set the report output format of analog values and pushbutton status at regular intervals)
     * if x = F, then y specifies the output report format
-        * y = 0 to output: analog pin __`Ax`__ state, last pushbutton state
-        * y = 1 to output: analog0 state, last pushbutton state
-        * y = 2 to output: analog0, analog1, last pushbutton state
-        * y = 3 to output: analog0, analog1, analog2, last pushbutton state
-        * y = 4 to output: analog0, analog1, analog2, analog3, last pushbutton state
-        * y = 5 to output: analog0, analog1, analog2, analog3, analog4, last pushbutton state
-        * y = 6 to output: analog0, analog1, analog2, analog3, analog4, analog 5, last pushbutton state
+        * y = 0 to output: last pushbutton state, analog0 
+        * y = 1 to output: last pushbutton state, analog0, analog1
+        * y = 2 to output: last pushbutton state, analog0, analog1, analog2
+        * y = 3 to output: last pushbutton state, analog0, analog1, analog2, analog3 
+        * y = 4 to output: last pushbutton state, analog0, analog1, analog2, analog3, analog4
+        * y = 5 to output: last pushbutton state, analog0, analog1, analog2, analog3, analog4, analog5
         * y = ?, then return output format index
     * __`RB`__ (begins streaming the data at the interval set by __`Oxx`__)
     * __`R`__ (ends the data streaming)
